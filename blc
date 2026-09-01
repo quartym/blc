@@ -1,0 +1,100 @@
+-- LocalScript (StarterGui içine koy)
+
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Ana ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlayerListMenu"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Menü çerçevesi
+local frame = Instance.new("Frame")
+frame.Name = "MenuFrame"
+frame.Size = UDim2.new(0, 250, 0, 350)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
+-- Başlık
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+title.BorderSizePixel = 0
+title.Text = "Sunucudaki Oyuncular"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.Parent = frame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = title
+
+-- Scroll edilebilir liste
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -10, 1, -50)
+scrollFrame.Position = UDim2.new(0, 5, 0, 45)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = frame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 5)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = scrollFrame
+
+-- Oyuncu butonu oluşturan fonksiyon
+local function createPlayerButton(player)
+	local button = Instance.new("TextButton")
+	button.Name = player.Name
+	button.Size = UDim2.new(1, 0, 0, 40)
+	button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	button.Text = player.Name
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.Gotham
+	button.TextSize = 14
+	button.AutoButtonColor = true
+	button.Parent = scrollFrame
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = button
+
+	button.MouseButton1Click:Connect(function()
+		local userId = player.UserId
+		local profileUrl = "https://www.roblox.com/users/" .. userId .. "/profile"
+		-- Profil sayfasına yönlendirme
+		GuiService:OpenBrowserWindow(profileUrl)
+	end)
+
+	return button
+end
+
+-- Mevcut oyuncuları listele
+for _, player in ipairs(Players:GetPlayers()) do
+	createPlayerButton(player)
+end
+
+-- Yeni katılan oyuncuları otomatik ekle
+Players.PlayerAdded:Connect(function(player)
+	createPlayerButton(player)
+end)
+
+-- Ayrılan oyuncuları listeden kaldır
+Players.PlayerRemoving:Connect(function(player)
+	local btn = scrollFrame:FindFirstChild(player.Name)
+	if btn then
+		btn:Destroy()
+	end
+end)
