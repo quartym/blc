@@ -1,0 +1,477 @@
+--// PLAYER LIST
+--// Put this LocalScript inside:
+--// StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--------------------------------------------------
+-- GUI CREATION
+--------------------------------------------------
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PlayerListGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
+
+--------------------------------------------------
+-- OPEN / CLOSE BUTTON
+--------------------------------------------------
+
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.fromOffset(150, 42)
+OpenButton.Position = UDim2.new(1, -170, 0, 20)
+OpenButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+OpenButton.BorderSizePixel = 0
+OpenButton.Text = "PLAYER LIST"
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 14
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0, 10)
+OpenCorner.Parent = OpenButton
+
+--------------------------------------------------
+-- MAIN WINDOW
+--------------------------------------------------
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(360, 500)
+Main.Position = UDim2.new(1, -380, 0, 75)
+Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = Main
+
+--------------------------------------------------
+-- TITLE
+--------------------------------------------------
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -70, 0, 45)
+Title.Position = UDim2.fromOffset(18, 8)
+Title.BackgroundTransparency = 1
+Title.Text = "Players"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 22
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
+
+--------------------------------------------------
+-- PLAYER COUNT
+--------------------------------------------------
+
+local Count = Instance.new("TextLabel")
+Count.Size = UDim2.new(1, -40, 0, 25)
+Count.Position = UDim2.fromOffset(18, 48)
+Count.BackgroundTransparency = 1
+Count.Text = "0 players"
+Count.TextColor3 = Color3.fromRGB(140, 140, 150)
+Count.TextSize = 13
+Count.Font = Enum.Font.Gotham
+Count.TextXAlignment = Enum.TextXAlignment.Left
+Count.Parent = Main
+
+--------------------------------------------------
+-- CLOSE BUTTON
+--------------------------------------------------
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(35, 35)
+Close.Position = UDim2.new(1, -45, 0, 10)
+Close.BackgroundTransparency = 1
+Close.Text = "×"
+Close.TextColor3 = Color3.fromRGB(255, 90, 90)
+Close.TextSize = 25
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Main
+
+--------------------------------------------------
+-- PLAYER SCROLLING LIST
+--------------------------------------------------
+
+local List = Instance.new("ScrollingFrame")
+List.Name = "PlayerList"
+List.Size = UDim2.new(1, -24, 1, -90)
+List.Position = UDim2.fromOffset(12, 80)
+List.BackgroundTransparency = 1
+List.BorderSizePixel = 0
+List.ScrollBarThickness = 5
+List.ScrollBarImageTransparency = 0.25
+List.CanvasSize = UDim2.new(0, 0, 0, 0)
+List.AutomaticCanvasSize = Enum.AutomaticSize.Y
+List.Parent = Main
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 7)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
+Layout.Parent = List
+
+--------------------------------------------------
+-- PROFILE WINDOW
+--------------------------------------------------
+
+local ProfileFrame = Instance.new("Frame")
+ProfileFrame.Name = "ProfileFrame"
+ProfileFrame.Size = UDim2.fromOffset(500, 190)
+ProfileFrame.Position = UDim2.new(0.5, -250, 0.5, -95)
+ProfileFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 27)
+ProfileFrame.BorderSizePixel = 0
+ProfileFrame.Visible = false
+ProfileFrame.ZIndex = 20
+ProfileFrame.Parent = ScreenGui
+
+local ProfileCorner = Instance.new("UICorner")
+ProfileCorner.CornerRadius = UDim.new(0, 14)
+ProfileCorner.Parent = ProfileFrame
+
+--------------------------------------------------
+-- PROFILE TITLE
+--------------------------------------------------
+
+local ProfileTitle = Instance.new("TextLabel")
+ProfileTitle.Size = UDim2.new(1, -60, 0, 40)
+ProfileTitle.Position = UDim2.fromOffset(18, 10)
+ProfileTitle.BackgroundTransparency = 1
+ProfileTitle.Text = "Profile"
+ProfileTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ProfileTitle.TextSize = 19
+ProfileTitle.Font = Enum.Font.GothamBold
+ProfileTitle.TextXAlignment = Enum.TextXAlignment.Left
+ProfileTitle.ZIndex = 21
+ProfileTitle.Parent = ProfileFrame
+
+--------------------------------------------------
+-- PROFILE CLOSE
+--------------------------------------------------
+
+local ProfileClose = Instance.new("TextButton")
+ProfileClose.Size = UDim2.fromOffset(35, 35)
+ProfileClose.Position = UDim2.new(1, -45, 0, 8)
+ProfileClose.BackgroundTransparency = 1
+ProfileClose.Text = "×"
+ProfileClose.TextColor3 = Color3.fromRGB(255, 90, 90)
+ProfileClose.TextSize = 25
+ProfileClose.Font = Enum.Font.GothamBold
+ProfileClose.ZIndex = 21
+ProfileClose.Parent = ProfileFrame
+
+--------------------------------------------------
+-- URL BOX
+--------------------------------------------------
+
+local URLBox = Instance.new("TextBox")
+URLBox.Size = UDim2.new(1, -36, 0, 50)
+URLBox.Position = UDim2.fromOffset(18, 58)
+URLBox.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+URLBox.BorderSizePixel = 0
+URLBox.Text = ""
+URLBox.PlaceholderText = "Profile URL"
+URLBox.TextColor3 = Color3.fromRGB(235, 235, 235)
+URLBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 105)
+URLBox.TextSize = 14
+URLBox.Font = Enum.Font.Gotham
+URLBox.ClearTextOnFocus = false
+URLBox.TextEditable = true
+URLBox.TextXAlignment = Enum.TextXAlignment.Left
+URLBox.ZIndex = 21
+URLBox.Parent = ProfileFrame
+
+local URLCorner = Instance.new("UICorner")
+URLCorner.CornerRadius = UDim.new(0, 8)
+URLCorner.Parent = URLBox
+
+--------------------------------------------------
+-- COPY BUTTON
+--------------------------------------------------
+
+local CopyButton = Instance.new("TextButton")
+CopyButton.Size = UDim2.fromOffset(150, 38)
+CopyButton.Position = UDim2.fromOffset(18, 120)
+CopyButton.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+CopyButton.BorderSizePixel = 0
+CopyButton.Text = "SELECT LINK"
+CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyButton.TextSize = 13
+CopyButton.Font = Enum.Font.GothamBold
+CopyButton.ZIndex = 21
+CopyButton.Parent = ProfileFrame
+
+local CopyCorner = Instance.new("UICorner")
+CopyCorner.CornerRadius = UDim.new(0, 8)
+CopyCorner.Parent = CopyButton
+
+--------------------------------------------------
+-- INFORMATION
+--------------------------------------------------
+
+local Info = Instance.new("TextLabel")
+Info.Size = UDim2.new(1, -190, 0, 38)
+Info.Position = UDim2.fromOffset(180, 120)
+Info.BackgroundTransparency = 1
+Info.Text = "Linki seçip Ctrl + C ile kopyala."
+Info.TextColor3 = Color3.fromRGB(150, 150, 155)
+Info.TextSize = 12
+Info.Font = Enum.Font.Gotham
+Info.TextWrapped = true
+Info.TextXAlignment = Enum.TextXAlignment.Left
+Info.ZIndex = 21
+Info.Parent = ProfileFrame
+
+--------------------------------------------------
+-- CREATE PLAYER BUTTON
+--------------------------------------------------
+
+local function CreatePlayerButton(Player)
+
+	-- Aynı oyuncu zaten varsa oluşturma
+	if List:FindFirstChild("Player_" .. Player.UserId) then
+		return
+	end
+
+	local Button = Instance.new("TextButton")
+	Button.Name = "Player_" .. Player.UserId
+	Button.Size = UDim2.new(1, -5, 0, 68)
+	Button.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+	Button.BorderSizePixel = 0
+	Button.Text = ""
+	Button.AutoButtonColor = true
+	Button.LayoutOrder = Player.UserId
+	Button.Parent = List
+
+	local ButtonCorner = Instance.new("UICorner")
+	ButtonCorner.CornerRadius = UDim.new(0, 10)
+	ButtonCorner.Parent = Button
+
+	--------------------------------------------------
+	-- AVATAR
+	--------------------------------------------------
+
+	local Avatar = Instance.new("ImageLabel")
+	Avatar.Name = "Avatar"
+	Avatar.Size = UDim2.fromOffset(52, 52)
+	Avatar.Position = UDim2.fromOffset(8, 8)
+	Avatar.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+	Avatar.BorderSizePixel = 0
+	Avatar.Image = ""
+	Avatar.Parent = Button
+
+	local AvatarCorner = Instance.new("UICorner")
+	AvatarCorner.CornerRadius = UDim.new(1, 0)
+	AvatarCorner.Parent = Avatar
+
+	task.spawn(function()
+
+		local Success, Image = pcall(function()
+
+			return Players:GetUserThumbnailAsync(
+				Player.UserId,
+				Enum.ThumbnailType.HeadShot,
+				Enum.ThumbnailSize.Size100x100
+			)
+
+		end)
+
+		if Success and Image and Avatar.Parent then
+			Avatar.Image = Image
+		end
+
+	end)
+
+	--------------------------------------------------
+	-- DISPLAY NAME
+	--------------------------------------------------
+
+	local DisplayName = Instance.new("TextLabel")
+	DisplayName.Size = UDim2.new(1, -75, 0, 26)
+	DisplayName.Position = UDim2.fromOffset(70, 8)
+	DisplayName.BackgroundTransparency = 1
+	DisplayName.Text = Player.DisplayName
+	DisplayName.TextColor3 = Color3.fromRGB(255, 255, 255)
+	DisplayName.TextSize = 15
+	DisplayName.Font = Enum.Font.GothamBold
+	DisplayName.TextXAlignment = Enum.TextXAlignment.Left
+	DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
+	DisplayName.Parent = Button
+
+	--------------------------------------------------
+	-- USERNAME
+	--------------------------------------------------
+
+	local Username = Instance.new("TextLabel")
+	Username.Size = UDim2.new(1, -75, 0, 23)
+	Username.Position = UDim2.fromOffset(70, 34)
+	Username.BackgroundTransparency = 1
+	Username.Text = "@" .. Player.Name
+	Username.TextColor3 = Color3.fromRGB(145, 145, 155)
+	Username.TextSize = 12
+	Username.Font = Enum.Font.Gotham
+	Username.TextXAlignment = Enum.TextXAlignment.Left
+	Username.TextTruncate = Enum.TextTruncate.AtEnd
+	Username.Parent = Button
+
+	--------------------------------------------------
+	-- CLICK
+	--------------------------------------------------
+
+	Button.MouseButton1Click:Connect(function()
+
+		local UserId = Player.UserId
+
+		local ProfileURL =
+			"https://www.roblox.com/users/"
+			.. tostring(UserId)
+			.. "/profile"
+
+		ProfileTitle.Text = Player.DisplayName .. "'s Profile"
+		URLBox.Text = ProfileURL
+
+		ProfileFrame.Visible = true
+
+		task.defer(function()
+
+			if URLBox.Parent then
+
+				URLBox:CaptureFocus()
+
+				URLBox.SelectionStart = 1
+				URLBox.CursorPosition = #ProfileURL + 1
+
+			end
+
+		end)
+
+	end)
+
+end
+
+--------------------------------------------------
+-- REMOVE PLAYER
+--------------------------------------------------
+
+local function RemovePlayer(Player)
+
+	local Button = List:FindFirstChild("Player_" .. Player.UserId)
+
+	if Button then
+		Button:Destroy()
+	end
+
+end
+
+--------------------------------------------------
+-- UPDATE COUNT
+--------------------------------------------------
+
+local function UpdateCount()
+
+	local Amount = #Players:GetPlayers()
+
+	if Amount == 1 then
+		Count.Text = "1 player"
+	else
+		Count.Text = tostring(Amount) .. " players"
+	end
+
+end
+
+--------------------------------------------------
+-- INITIAL PLAYERS
+--------------------------------------------------
+
+for _, Player in ipairs(Players:GetPlayers()) do
+
+	CreatePlayerButton(Player)
+
+end
+
+UpdateCount()
+
+--------------------------------------------------
+-- PLAYER JOIN
+--------------------------------------------------
+
+Players.PlayerAdded:Connect(function(Player)
+
+	CreatePlayerButton(Player)
+	UpdateCount()
+
+end)
+
+--------------------------------------------------
+-- PLAYER LEAVE
+--------------------------------------------------
+
+Players.PlayerRemoving:Connect(function(Player)
+
+	RemovePlayer(Player)
+	UpdateCount()
+
+end)
+
+--------------------------------------------------
+-- OPEN / CLOSE
+--------------------------------------------------
+
+OpenButton.MouseButton1Click:Connect(function()
+
+	Main.Visible = not Main.Visible
+
+end)
+
+Close.MouseButton1Click:Connect(function()
+
+	Main.Visible = false
+
+end)
+
+--------------------------------------------------
+-- PROFILE CLOSE
+--------------------------------------------------
+
+ProfileClose.MouseButton1Click:Connect(function()
+
+	ProfileFrame.Visible = false
+	URLBox:ReleaseFocus()
+
+end)
+
+--------------------------------------------------
+-- SELECT LINK
+--------------------------------------------------
+
+CopyButton.MouseButton1Click:Connect(function()
+
+	URLBox:CaptureFocus()
+
+	URLBox.SelectionStart = 1
+	URLBox.CursorPosition = #URLBox.Text + 1
+
+	CopyButton.Text = "LINK SELECTED"
+
+	task.delay(1.5, function()
+
+		if CopyButton.Parent then
+			CopyButton.Text = "SELECT LINK"
+		end
+
+	end)
+
+end)
+
+print("================================")
+print("PLAYER LIST LOADED")
+print("Player:", LocalPlayer.Name)
+print("Players:", #Players:GetPlayers())
+print("================================")
