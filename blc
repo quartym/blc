@@ -1,100 +1,408 @@
--- LocalScript (StarterGui içine koy)
+```lua
+--// Player List GUI
+--// LocalScript -> StarterGui > ScreenGui > LocalScript
 
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
-local LocalPlayer = Players.LocalPlayer
 
--- Ana ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlayerListMenu"
+local localPlayer = Players.LocalPlayer
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local MENU_WIDTH = 360
+local MENU_HEIGHT = 440
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
+local screenGui = script.Parent
+
 screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+screenGui.IgnoreGuiInset = false
 
--- Menü çerçevesi
-local frame = Instance.new("Frame")
-frame.Name = "MenuFrame"
-frame.Size = UDim2.new(0, 250, 0, 350)
-frame.Position = UDim2.new(0, 20, 0, 20)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
+--==================================================
+-- MAIN MENU
+--==================================================
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "PlayerListMenu"
+mainFrame.Parent = screenGui
 
--- Başlık
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Position = UDim2.fromScale(0.5, 0.5)
+mainFrame.Size = UDim2.fromOffset(MENU_WIDTH, MENU_HEIGHT)
+
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.BorderSizePixel = 0
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(60, 60, 70)
+mainStroke.Thickness = 1
+mainStroke.Transparency = 0.25
+mainStroke.Parent = mainFrame
+
+--==================================================
+-- TITLE
+--==================================================
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-title.BorderSizePixel = 0
-title.Text = "Sunucudaki Oyuncular"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Name = "Title"
+title.Parent = mainFrame
+
+title.BackgroundTransparency = 1
+title.Position = UDim2.fromOffset(20, 15)
+title.Size = UDim2.new(1, -70, 0, 35)
+
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.Parent = frame
+title.Text = "Players"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 22
+title.TextXAlignment = Enum.TextXAlignment.Left
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = title
+--==================================================
+-- PLAYER COUNT
+--==================================================
 
--- Scroll edilebilir liste
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -10, 1, -50)
-scrollFrame.Position = UDim2.new(0, 5, 0, 45)
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 6
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.Parent = frame
+local playerCount = Instance.new("TextLabel")
+playerCount.Name = "PlayerCount"
+playerCount.Parent = mainFrame
+
+playerCount.BackgroundTransparency = 1
+playerCount.Position = UDim2.fromOffset(20, 48)
+playerCount.Size = UDim2.new(1, -40, 0, 22)
+
+playerCount.Font = Enum.Font.Gotham
+playerCount.TextColor3 = Color3.fromRGB(150, 150, 160)
+playerCount.TextSize = 13
+playerCount.TextXAlignment = Enum.TextXAlignment.Left
+
+--==================================================
+-- CLOSE BUTTON
+--==================================================
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Parent = mainFrame
+
+closeButton.AnchorPoint = Vector2.new(1, 0)
+closeButton.Position = UDim2.new(1, -15, 0, 15)
+closeButton.Size = UDim2.fromOffset(35, 35)
+
+closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+closeButton.BorderSizePixel = 0
+
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "×"
+closeButton.TextColor3 = Color3.fromRGB(220, 220, 225)
+closeButton.TextSize = 22
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 9)
+closeCorner.Parent = closeButton
+
+--==================================================
+-- SCROLLING FRAME
+--==================================================
+
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Name = "PlayerList"
+scrollingFrame.Parent = mainFrame
+
+scrollingFrame.Position = UDim2.fromOffset(15, 80)
+scrollingFrame.Size = UDim2.new(1, -30, 1, -95)
+
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.BorderSizePixel = 0
+
+scrollingFrame.ScrollBarThickness = 5
+scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 100)
+
+scrollingFrame.CanvasSize = UDim2.fromOffset(0, 0)
+scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+scrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+
+--==================================================
+-- LIST LAYOUT
+--==================================================
 
 local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Parent = scrollFrame
+listLayout.Parent = scrollingFrame
 
--- Oyuncu butonu oluşturan fonksiyon
-local function createPlayerButton(player)
-	local button = Instance.new("TextButton")
-	button.Name = player.Name
-	button.Size = UDim2.new(1, 0, 0, 40)
-	button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	button.Text = player.Name
-	button.TextColor3 = Color3.fromRGB(255, 255, 255)
-	button.Font = Enum.Font.Gotham
-	button.TextSize = 14
-	button.AutoButtonColor = true
-	button.Parent = scrollFrame
+listLayout.Padding = UDim.new(0, 8)
+listLayout.SortOrder = Enum.SortOrder.Name
 
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 6)
-	btnCorner.Parent = button
+--==================================================
+-- PADDING
+--==================================================
 
-	button.MouseButton1Click:Connect(function()
-		local userId = player.UserId
-		local profileUrl = "https://www.roblox.com/users/" .. userId .. "/profile"
-		-- Profil sayfasına yönlendirme
-		GuiService:OpenBrowserWindow(profileUrl)
+local listPadding = Instance.new("UIPadding")
+listPadding.Parent = scrollingFrame
+
+listPadding.PaddingTop = UDim.new(0, 3)
+listPadding.PaddingBottom = UDim.new(0, 5)
+listPadding.PaddingLeft = UDim.new(0, 2)
+listPadding.PaddingRight = UDim.new(0, 2)
+
+--==================================================
+-- OPEN BUTTON
+--==================================================
+
+local openButton = Instance.new("TextButton")
+openButton.Name = "OpenPlayerList"
+openButton.Parent = screenGui
+
+openButton.AnchorPoint = Vector2.new(0, 0.5)
+openButton.Position = UDim2.new(0, 20, 0.5, 0)
+openButton.Size = UDim2.fromOffset(130, 42)
+
+openButton.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+openButton.BorderSizePixel = 0
+
+openButton.Font = Enum.Font.GothamBold
+openButton.Text = "Players"
+openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+openButton.TextSize = 15
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0, 10)
+openCorner.Parent = openButton
+
+local openStroke = Instance.new("UIStroke")
+openStroke.Color = Color3.fromRGB(65, 65, 75)
+openStroke.Transparency = 0.2
+openStroke.Parent = openButton
+
+--==================================================
+-- PLAYER THUMBNAIL
+--==================================================
+
+local function getThumbnail(userId)
+	local success, content = pcall(function()
+		return Players:GetUserThumbnailAsync(
+			userId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size100x100
+		)
 	end)
 
-	return button
-end
-
--- Mevcut oyuncuları listele
-for _, player in ipairs(Players:GetPlayers()) do
-	createPlayerButton(player)
-end
-
--- Yeni katılan oyuncuları otomatik ekle
-Players.PlayerAdded:Connect(function(player)
-	createPlayerButton(player)
-end)
-
--- Ayrılan oyuncuları listeden kaldır
-Players.PlayerRemoving:Connect(function(player)
-	local btn = scrollFrame:FindFirstChild(player.Name)
-	if btn then
-		btn:Destroy()
+	if success then
+		return content
 	end
+
+	return ""
+end
+
+--==================================================
+-- OPEN PROFILE
+--==================================================
+
+local function openPlayerProfile(player)
+	if not player or not player:IsDescendantOf(Players) then
+		return
+	end
+
+	-- Roblox player profile URL
+	local profileUrl = "https://www.roblox.com/users/" .. tostring(player.UserId) .. "/profile"
+
+	-- Open the Roblox profile in the browser.
+	pcall(function()
+		GuiService:OpenBrowserWindow(profileUrl)
+	end)
+end
+
+--==================================================
+-- CREATE PLAYER ROW
+--==================================================
+
+local function createPlayerRow(player)
+	local row = Instance.new("TextButton")
+	row.Name = "Player_" .. tostring(player.UserId)
+	row.Parent = scrollingFrame
+
+	row.Size = UDim2.new(1, -4, 0, 70)
+
+	row.BackgroundColor3 = Color3.fromRGB(32, 32, 39)
+	row.BorderSizePixel = 0
+
+	row.AutoButtonColor = false
+
+	row.Text = ""
+
+	-- Prevent weird name/ID characters from affecting layout.
+	row.ClipsDescendants = true
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 10)
+	rowCorner.Parent = row
+
+	--==================================================
+	-- THUMBNAIL
+	--==================================================
+
+	local avatar = Instance.new("ImageLabel")
+	avatar.Name = "Avatar"
+	avatar.Parent = row
+
+	avatar.Position = UDim2.fromOffset(8, 8)
+	avatar.Size = UDim2.fromOffset(54, 54)
+
+	avatar.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+	avatar.BorderSizePixel = 0
+
+	avatar.Image = getThumbnail(player.UserId)
+	avatar.ScaleType = Enum.ScaleType.Crop
+
+	local avatarCorner = Instance.new("UICorner")
+	avatarCorner.CornerRadius = UDim.new(1, 0)
+	avatarCorner.Parent = avatar
+
+	--==================================================
+	-- DISPLAY NAME
+	--==================================================
+
+	local displayName = Instance.new("TextLabel")
+	displayName.Name = "DisplayName"
+	displayName.Parent = row
+
+	displayName.Position = UDim2.fromOffset(72, 11)
+	displayName.Size = UDim2.new(1, -92, 0, 24)
+
+	displayName.BackgroundTransparency = 1
+
+	displayName.Font = Enum.Font.GothamBold
+	displayName.Text = player.DisplayName
+	displayName.TextColor3 = Color3.fromRGB(245, 245, 248)
+	displayName.TextSize = 15
+
+	displayName.TextXAlignment = Enum.TextXAlignment.Left
+	displayName.TextYAlignment = Enum.TextYAlignment.Center
+
+	displayName.TextTruncate = Enum.TextTruncate.AtEnd
+
+	--==================================================
+	-- USERNAME
+	--==================================================
+
+	local username = Instance.new("TextLabel")
+	username.Name = "Username"
+	username.Parent = row
+
+	username.Position = UDim2.fromOffset(72, 36)
+	username.Size = UDim2.new(1, -92, 0, 20)
+
+	username.BackgroundTransparency = 1
+
+	username.Font = Enum.Font.Gotham
+	username.Text = "@" .. player.Name
+	username.TextColor3 = Color3.fromRGB(145, 145, 155)
+	username.TextSize = 12
+
+	username.TextXAlignment = Enum.TextXAlignment.Left
+	username.TextYAlignment = Enum.TextYAlignment.Center
+
+	username.TextTruncate = Enum.TextTruncate.AtEnd
+
+	--==================================================
+	-- CLICK
+	--==================================================
+
+	row.Activated:Connect(function()
+		openPlayerProfile(player)
+	end)
+
+	--==================================================
+	-- HOVER
+	--==================================================
+
+	row.MouseEnter:Connect(function()
+		row.BackgroundColor3 = Color3.fromRGB(42, 42, 50)
+	end)
+
+	row.MouseLeave:Connect(function()
+		row.BackgroundColor3 = Color3.fromRGB(32, 32, 39)
+	end)
+
+	return row
+end
+
+--==================================================
+-- REFRESH PLAYER LIST
+--==================================================
+
+local function refreshPlayerList()
+	-- Delete old rows.
+	for _, child in ipairs(scrollingFrame:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	-- Get everyone currently in the server.
+	local players = Players:GetPlayers()
+
+	-- Update counter.
+	playerCount.Text = tostring(#players) .. " players in this server"
+
+	-- Create a row for every player.
+	for _, player in ipairs(players) do
+		createPlayerRow(player)
+	end
+end
+
+--==================================================
+-- PLAYER JOIN
+--==================================================
+
+Players.PlayerAdded:Connect(function(player)
+	-- Wait briefly so the player is completely initialized.
+	task.defer(function()
+		if player:IsDescendantOf(Players) then
+			refreshPlayerList()
+		end
+	end)
 end)
+
+--==================================================
+-- PLAYER LEAVE
+--==================================================
+
+Players.PlayerRemoving:Connect(function(player)
+	task.defer(function()
+		refreshPlayerList()
+	end)
+end)
+
+--==================================================
+-- OPEN / CLOSE
+--==================================================
+
+closeButton.Activated:Connect(function()
+	mainFrame.Visible = false
+	openButton.Visible = true
+end)
+
+openButton.Activated:Connect(function()
+	mainFrame.Visible = true
+
+	-- Refresh every time the menu opens.
+	refreshPlayerList()
+end)
+
+--==================================================
+-- INITIAL STATE
+--==================================================
+
+mainFrame.Visible = false
+openButton.Visible = true
+
+-- Build the initial list.
+refreshPlayerList()
+```
