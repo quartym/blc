@@ -1,340 +1,202 @@
---[[
-    PlayerListGui - LocalScript
-    Konum: StarterGui > PlayerListGui (ScreenGui) > LocalScript
-
-    Özellikler:
-    - Aç/kapat edilebilir oyuncu listesi
-    - Kullanıcı adı, display name, avatar thumbnail
-    - Oyuncu girince/çıkınca otomatik güncelleme
-    - Tıklayınca profil URL'sini gösterme (gerçek clipboard yazma API'si
-      Roblox oyun ortamında LocalScript'ler için mevcut değildir; bu yüzden
-      URL, seçili bir TextBox içinde gösterilir ve oyuncu Ctrl+C ile
-      kopyalayabilir. Bu, uydurma bir API kullanmamak için bilinçli bir tercihtir.)
-]]
-
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local gui = script.Parent
 
--- ============================================================
--- AYARLAR
--- ============================================================
-local THEME = {
-    Background   = Color3.fromRGB(30, 30, 36),
-    Panel        = Color3.fromRGB(40, 40, 48),
-    EntryBg      = Color3.fromRGB(50, 50, 60),
-    EntryBgHover = Color3.fromRGB(62, 62, 74),
-    Accent       = Color3.fromRGB(90, 140, 255),
-    Text         = Color3.fromRGB(235, 235, 240),
-    SubText      = Color3.fromRGB(170, 170, 180),
-}
+print("PLAYER LIST SCRIPT ÇALIŞTI:", player.Name)
 
-local PANEL_WIDTH = 260
-local ENTRY_HEIGHT = 56
+gui.ResetOnSpawn = false
 
--- ============================================================
--- ANA GUI YAPISI
--- ============================================================
-local screenGui = script.Parent
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Ana frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(1, -320, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Parent = gui
 
--- --- Aç/Kapat Butonu ---
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Parent = screenGui
-toggleButton.Size = UDim2.new(0, 44, 0, 44)
-toggleButton.Position = UDim2.new(1, -54, 0, 10)
-toggleButton.AnchorPoint = Vector2.new(0, 0)
-toggleButton.BackgroundColor3 = THEME.Panel
-toggleButton.Text = "☰"
-toggleButton.TextColor3 = THEME.Text
-toggleButton.TextSize = 22
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.AutoButtonColor = false
-toggleButton.ZIndex = 10
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = frame
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 12)
-toggleCorner.Parent = toggleButton
+-- Başlık
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "SERVER PLAYERS"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
 
--- --- Ana Panel ---
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, PANEL_WIDTH, 0, 400)
-mainFrame.Position = UDim2.new(1, -PANEL_WIDTH - 10, 0, 62)
-mainFrame.BackgroundColor3 = THEME.Background
-mainFrame.Visible = false
-mainFrame.ZIndex = 5
+-- Liste
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1, -20, 1, -65)
+list.Position = UDim2.new(0, 10, 0, 55)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 5
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+list.CanvasSize = UDim2.new(0, 0, 0, 0)
+list.Parent = frame
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 14)
-mainCorner.Parent = mainFrame
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 6)
+layout.SortOrder = Enum.SortOrder.Name
+layout.Parent = list
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(60, 60, 70)
-mainStroke.Thickness = 1
-mainStroke.Parent = mainFrame
+-- Link penceresi
+local linkFrame = Instance.new("Frame")
+linkFrame.Size = UDim2.new(0, 450, 0, 140)
+linkFrame.Position = UDim2.new(0.5, -225, 0.5, -70)
+linkFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+linkFrame.BorderSizePixel = 0
+linkFrame.Visible = false
+linkFrame.ZIndex = 10
+linkFrame.Parent = gui
 
--- --- Başlık ---
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "TitleLabel"
-titleLabel.Parent = mainFrame
-titleLabel.Size = UDim2.new(1, -20, 0, 36)
-titleLabel.Position = UDim2.new(0, 10, 0, 6)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Players"
-titleLabel.TextColor3 = THEME.Text
-titleLabel.TextSize = 18
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+local linkCorner = Instance.new("UICorner")
+linkCorner.CornerRadius = UDim.new(0, 12)
+linkCorner.Parent = linkFrame
 
-local countLabel = Instance.new("TextLabel")
-countLabel.Name = "CountLabel"
-countLabel.Parent = mainFrame
-countLabel.Size = UDim2.new(1, -20, 0, 18)
-countLabel.Position = UDim2.new(0, 10, 0, 34)
-countLabel.BackgroundTransparency = 1
-countLabel.Text = "0 online"
-countLabel.TextColor3 = THEME.SubText
-countLabel.TextSize = 12
-countLabel.Font = Enum.Font.Gotham
-countLabel.TextXAlignment = Enum.TextXAlignment.Left
+local linkTitle = Instance.new("TextLabel")
+linkTitle.Size = UDim2.new(1, -50, 0, 40)
+linkTitle.Position = UDim2.new(0, 15, 0, 5)
+linkTitle.BackgroundTransparency = 1
+linkTitle.Text = "Profile Link"
+linkTitle.TextColor3 = Color3.new(1, 1, 1)
+linkTitle.TextSize = 18
+linkTitle.Font = Enum.Font.GothamBold
+linkTitle.TextXAlignment = Enum.TextXAlignment.Left
+linkTitle.ZIndex = 11
+linkTitle.Parent = linkFrame
 
--- --- Kaydırılabilir Liste ---
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Name = "PlayerScroll"
-scrollFrame.Parent = mainFrame
-scrollFrame.Position = UDim2.new(0, 8, 0, 58)
-scrollFrame.Size = UDim2.new(1, -16, 1, -66)
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 5
-scrollFrame.ScrollBarImageColor3 = THEME.Accent
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 35, 0, 35)
+close.Position = UDim2.new(1, -40, 0, 5)
+close.BackgroundTransparency = 1
+close.Text = "X"
+close.TextColor3 = Color3.fromRGB(255, 80, 80)
+close.TextSize = 18
+close.Font = Enum.Font.GothamBold
+close.ZIndex = 11
+close.Parent = linkFrame
 
-local listLayout = Instance.new("UIListLayout")
-listLayout.Parent = scrollFrame
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Padding = UDim.new(0, 6)
-
--- --- Bildirim Etiketi (kopyalama bilgisi) ---
-local notifyLabel = Instance.new("TextLabel")
-notifyLabel.Name = "NotifyLabel"
-notifyLabel.Parent = mainFrame
-notifyLabel.Size = UDim2.new(1, -20, 0, 26)
-notifyLabel.Position = UDim2.new(0, 10, 1, -30)
-notifyLabel.BackgroundTransparency = 1
-notifyLabel.Text = ""
-notifyLabel.TextColor3 = THEME.Accent
-notifyLabel.TextSize = 13
-notifyLabel.Font = Enum.Font.GothamBold
-notifyLabel.TextTransparency = 1
-notifyLabel.ZIndex = 6
-
--- --- Profil linki için TextBox (seçili gösterim, Ctrl+C ile kopyalama) ---
 local linkBox = Instance.new("TextBox")
-linkBox.Name = "LinkBox"
-linkBox.Parent = mainFrame
-linkBox.Size = UDim2.new(1, -20, 0, 26)
-linkBox.Position = UDim2.new(0, 10, 1, -30)
-linkBox.BackgroundColor3 = THEME.EntryBg
-linkBox.TextColor3 = THEME.Text
-linkBox.TextSize = 12
-linkBox.Font = Enum.Font.Code
-linkBox.Text = ""
+linkBox.Size = UDim2.new(1, -30, 0, 45)
+linkBox.Position = UDim2.new(0, 15, 0, 55)
+linkBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+linkBox.TextColor3 = Color3.new(1, 1, 1)
+linkBox.TextSize = 14
+linkBox.Font = Enum.Font.Gotham
 linkBox.ClearTextOnFocus = false
-linkBox.Visible = false
-linkBox.ZIndex = 6
+linkBox.TextEditable = true
+linkBox.ZIndex = 11
+linkBox.Parent = linkFrame
 
-local linkBoxCorner = Instance.new("UICorner")
-linkBoxCorner.CornerRadius = UDim.new(0, 8)
-linkBoxCorner.Parent = linkBox
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 8)
+boxCorner.Parent = linkBox
 
--- ============================================================
--- AÇ / KAPAT MANTIĞI
--- ============================================================
-local isOpen = false
-
-local function setOpen(open)
-    isOpen = open
-    mainFrame.Visible = open
-    if not open then
-        linkBox.Visible = false
-    end
-end
-
-toggleButton.MouseButton1Click:Connect(function()
-    setOpen(not isOpen)
+close.MouseButton1Click:Connect(function()
+	linkFrame.Visible = false
+	linkBox:ReleaseFocus()
 end)
 
--- ============================================================
--- BİLDİRİM GÖSTERME (kısa süreli mesaj)
--- ============================================================
-local notifyToken = 0
+-- Oyuncu oluştur
+local function addPlayer(targetPlayer)
 
-local function showNotification(text)
-    notifyToken += 1
-    local myToken = notifyToken
+	local button = Instance.new("TextButton")
+	button.Name = targetPlayer.Name
+	button.Size = UDim2.new(1, -5, 0, 60)
+	button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	button.BorderSizePixel = 0
+	button.Text = ""
+	button.Parent = list
 
-    notifyLabel.Text = text
-    notifyLabel.TextTransparency = 0
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 8)
+	buttonCorner.Parent = button
 
-    task.delay(2, function()
-        if myToken ~= notifyToken then
-            return -- daha yeni bir bildirim geldi, bunu iptal et
-        end
-        local tween = TweenService:Create(
-            notifyLabel,
-            TweenInfo.new(0.4, Enum.EasingStyle.Quad),
-            { TextTransparency = 1 }
-        )
-        tween:Play()
-    end)
+	-- Avatar
+	local avatar = Instance.new("ImageLabel")
+	avatar.Size = UDim2.new(0, 45, 0, 45)
+	avatar.Position = UDim2.new(0, 7, 0.5, -22)
+	avatar.BackgroundTransparency = 1
+	avatar.Parent = button
+
+	local success, image = pcall(function()
+		return Players:GetUserThumbnailAsync(
+			targetPlayer.UserId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size100x100
+		)
+	end)
+
+	if success then
+		avatar.Image = image
+	end
+
+	-- Display name
+	local display = Instance.new("TextLabel")
+	display.Size = UDim2.new(1, -65, 0, 25)
+	display.Position = UDim2.new(0, 60, 0, 5)
+	display.BackgroundTransparency = 1
+	display.Text = targetPlayer.DisplayName
+	display.TextColor3 = Color3.new(1, 1, 1)
+	display.TextSize = 15
+	display.Font = Enum.Font.GothamBold
+	display.TextXAlignment = Enum.TextXAlignment.Left
+	display.Parent = button
+
+	-- Username
+	local username = Instance.new("TextLabel")
+	username.Size = UDim2.new(1, -65, 0, 22)
+	username.Position = UDim2.new(0, 60, 0, 30)
+	username.BackgroundTransparency = 1
+	username.Text = "@" .. targetPlayer.Name
+	username.TextColor3 = Color3.fromRGB(150, 150, 150)
+	username.TextSize = 12
+	username.Font = Enum.Font.Gotham
+	username.TextXAlignment = Enum.TextXAlignment.Left
+	username.Parent = button
+
+	-- Tıklayınca profil linki
+	button.MouseButton1Click:Connect(function()
+
+		local url = "https://www.roblox.com/users/"
+			.. targetPlayer.UserId
+			.. "/profile"
+
+		print("Profil:", url)
+
+		linkTitle.Text = targetPlayer.DisplayName .. " Profile"
+		linkBox.Text = url
+		linkFrame.Visible = true
+
+		task.wait()
+
+		linkBox:CaptureFocus()
+		linkBox.CursorPosition = #url + 1
+	end)
 end
 
--- ============================================================
--- PROFİL LİNKİ GÖSTERME + SEÇME (kopyalama yerine geçen güvenli yöntem)
--- ============================================================
-local function presentProfileLink(url)
-    linkBox.Text = url
-    linkBox.Visible = true
-
-    -- Kullanıcıya kolayca seçip Ctrl+C yapabilmesi için odaklan ve tüm metni seç
-    linkBox:CaptureFocus()
-    linkBox.CursorPosition = #url + 1
-    linkBox.SelectionStart = 1
-
-    showNotification("Profile link ready — press Ctrl+C to copy")
+-- Mevcut oyuncular
+for _, targetPlayer in ipairs(Players:GetPlayers()) do
+	addPlayer(targetPlayer)
 end
 
--- ============================================================
--- OYUNCU SATIRI OLUŞTURMA
--- ============================================================
-local playerEntries = {} -- [Player] = Frame
-
-local function createPlayerEntry(targetPlayer)
-    local entry = Instance.new("TextButton")
-    entry.Name = "Entry_" .. tostring(targetPlayer.UserId)
-    entry.Parent = scrollFrame
-    entry.Size = UDim2.new(1, 0, 0, ENTRY_HEIGHT)
-    entry.BackgroundColor3 = THEME.EntryBg
-    entry.AutoButtonColor = false
-    entry.Text = ""
-    entry.LayoutOrder = targetPlayer.UserId
-
-    local entryCorner = Instance.new("UICorner")
-    entryCorner.CornerRadius = UDim.new(0, 10)
-    entryCorner.Parent = entry
-
-    -- Avatar thumbnail
-    local avatar = Instance.new("ImageLabel")
-    avatar.Name = "Avatar"
-    avatar.Parent = entry
-    avatar.Size = UDim2.new(0, 40, 0, 40)
-    avatar.Position = UDim2.new(0, 8, 0.5, -20)
-    avatar.BackgroundColor3 = THEME.Panel
-    avatar.Image = ""
-
-    local avatarCorner = Instance.new("UICorner")
-    avatarCorner.CornerRadius = UDim.new(1, 0)
-    avatarCorner.Parent = avatar
-
-    -- Display Name
-    local displayLabel = Instance.new("TextLabel")
-    displayLabel.Name = "DisplayName"
-    displayLabel.Parent = entry
-    displayLabel.Size = UDim2.new(1, -60, 0, 20)
-    displayLabel.Position = UDim2.new(0, 56, 0, 6)
-    displayLabel.BackgroundTransparency = 1
-    displayLabel.Text = targetPlayer.DisplayName
-    displayLabel.TextColor3 = THEME.Text
-    displayLabel.TextSize = 14
-    displayLabel.Font = Enum.Font.GothamBold
-    displayLabel.TextXAlignment = Enum.TextXAlignment.Left
-    displayLabel.TextTruncate = Enum.TextTruncate.AtEnd
-
-    -- Kullanıcı adı (@username) — boşluk/özel karakter olsa da doğrudan
-    -- Text özelliğine atandığı için sorun çıkmaz.
-    local usernameLabel = Instance.new("TextLabel")
-    usernameLabel.Name = "Username"
-    usernameLabel.Parent = entry
-    usernameLabel.Size = UDim2.new(1, -60, 0, 16)
-    usernameLabel.Position = UDim2.new(0, 56, 0, 26)
-    usernameLabel.BackgroundTransparency = 1
-    usernameLabel.Text = "@" .. targetPlayer.Name
-    usernameLabel.TextColor3 = THEME.SubText
-    usernameLabel.TextSize = 12
-    usernameLabel.Font = Enum.Font.Gotham
-    usernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    usernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-
-    -- Hover efekti
-    entry.MouseEnter:Connect(function()
-        entry.BackgroundColor3 = THEME.EntryBgHover
-    end)
-    entry.MouseLeave:Connect(function()
-        entry.BackgroundColor3 = THEME.EntryBg
-    end)
-
-    -- Tıklama: profil linkini oluştur ve göster
-    entry.MouseButton1Click:Connect(function()
-        local url = string.format("https://www.roblox.com/users/%d/profile", targetPlayer.UserId)
-        presentProfileLink(url)
-    end)
-
-    -- Avatar thumbnail'ini ayrı bir task içinde yükle (listeyi bloklamasın)
-    task.spawn(function()
-        local ok, content = pcall(function()
-            local thumb = Players:GetUserThumbnailAsync(
-                targetPlayer.UserId,
-                Enum.ThumbnailType.HeadShot,
-                Enum.ThumbnailSize.Size100x100
-            )
-            return thumb
-        end)
-        if ok and content and avatar.Parent then
-            avatar.Image = content
-        end
-    end)
-
-    playerEntries[targetPlayer] = entry
-end
-
-local function removePlayerEntry(targetPlayer)
-    local entry = playerEntries[targetPlayer]
-    if entry then
-        entry:Destroy()
-        playerEntries[targetPlayer] = nil
-    end
-end
-
-local function updateCountLabel()
-    local count = 0
-    for _ in pairs(playerEntries) do
-        count += 1
-    end
-    countLabel.Text = tostring(count) .. " online"
-end
-
--- ============================================================
--- OYUNCU EVENT'LERİ
--- ============================================================
-for _, p in ipairs(Players:GetPlayers()) do
-    createPlayerEntry(p)
-end
-updateCountLabel()
-
-Players.PlayerAdded:Connect(function(p)
-    createPlayerEntry(p)
-    updateCountLabel()
+-- Yeni oyuncu
+Players.PlayerAdded:Connect(function(targetPlayer)
+	addPlayer(targetPlayer)
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    removePlayerEntry(p)
-    updateCountLabel()
+-- Çıkan oyuncu
+Players.PlayerRemoving:Connect(function(targetPlayer)
+
+	local button = list:FindFirstChild(targetPlayer.Name)
+
+	if button then
+		button:Destroy()
+	end
 end)
