@@ -1,0 +1,352 @@
+--[[
+	PLAYER LIST MENU
+	----------------
+	Bu LocalScript tamamen client-side çalışır.
+	Tüm GUI elemanlarını KENDİSİ oluşturur, Explorer'da elle bir şey
+	hazırlamana gerek yoktur.
+
+	NEREYE KOYULACAK:
+		StarterPlayer > StarterPlayerScripts
+	İçine bu scripti bir LocalScript olarak yapıştır.
+	(Adı önemli değil, örn: "PlayerListMenu")
+
+	Başka hiçbir GUI objesi oluşturman gerekmiyor, script her şeyi
+	kod ile inşa ediyor.
+]]
+
+local Players           = game:GetService("Players")
+local TweenService      = game:GetService("TweenService")
+local GuiService        = game:GetService("GuiService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui    = LocalPlayer:WaitForChild("PlayerGui")
+
+----------------------------------------------------------------
+-- AYARLAR
+----------------------------------------------------------------
+local THUMBNAIL_TYPE = Enum.ThumbnailType.HeadShot
+local THUMBNAIL_SIZE = Enum.ThumbnailSize.Size100x100
+local CARD_HEIGHT     = 0.14 -- ScrollingFrame'e göre oransal (Scale)
+
+----------------------------------------------------------------
+-- ANA SCREENGUI
+----------------------------------------------------------------
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlayerListMenuGui"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.IgnoreGuiInset = false
+screenGui.Parent = PlayerGui
+
+----------------------------------------------------------------
+-- AÇ/KAPA BUTONU (Toggle Button)
+----------------------------------------------------------------
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.AnchorPoint = Vector2.new(1, 0)
+toggleButton.Position = UDim2.new(1, -20, 0, 20)
+toggleButton.Size = UDim2.new(0, 55, 0, 55)
+toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+toggleButton.BorderSizePixel = 0
+toggleButton.Text = "👥"
+toggleButton.TextScaled = true
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.ZIndex = 10
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.Parent = toggleButton
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = Color3.fromRGB(90, 90, 110)
+toggleStroke.Thickness = 2
+toggleStroke.Parent = toggleButton
+
+----------------------------------------------------------------
+-- ANA MENÜ ÇERÇEVESİ (MainFrame)
+----------------------------------------------------------------
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.AnchorPoint = Vector2.new(1, 0)
+mainFrame.Position = UDim2.new(1, -20, 0, 90)
+mainFrame.Size = UDim2.new(0, 320, 0.65, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(70, 70, 90)
+mainStroke.Thickness = 1.5
+mainStroke.Parent = mainFrame
+
+-- Başlık Çubuğu
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 46)
+titleBar.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 14)
+titleCorner.Parent = titleBar
+
+-- Köşe yuvarlaklığının alt kısmı bozmaması için düzeltici parça
+local titleFix = Instance.new("Frame")
+titleFix.BackgroundColor3 = titleBar.BackgroundColor3
+titleFix.BorderSizePixel = 0
+titleFix.Size = UDim2.new(1, 0, 0, 14)
+titleFix.Position = UDim2.new(0, 0, 1, -14)
+titleFix.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.BackgroundTransparency = 1
+titleLabel.Position = UDim2.new(0, 16, 0, 0)
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "Oyuncular"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.AnchorPoint = Vector2.new(1, 0.5)
+closeButton.Position = UDim2.new(1, -12, 0.5, 0)
+closeButton.Size = UDim2.new(0, 28, 0, 28)
+closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 62)
+closeButton.Text = "✕"
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 16
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeButton
+
+----------------------------------------------------------------
+-- SCROLLINGFRAME (Oyuncu Listesi)
+----------------------------------------------------------------
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "PlayerScroll"
+scrollFrame.Position = UDim2.new(0, 8, 0, 54)
+scrollFrame.Size = UDim2.new(1, -16, 1, -62)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 140)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = mainFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 6)
+listLayout.Parent = scrollFrame
+
+local listPadding = Instance.new("UIPadding")
+listPadding.PaddingTop = UDim.new(0, 4)
+listPadding.PaddingBottom = UDim.new(0, 4)
+listPadding.Parent = scrollFrame
+
+----------------------------------------------------------------
+-- AÇMA / KAPAMA MANTIĞI
+----------------------------------------------------------------
+local isOpen = false
+
+local function setMenuOpen(open)
+	isOpen = open
+	if open then
+		mainFrame.Visible = true
+		mainFrame.Size = UDim2.new(0, 320, 0, 0)
+		local targetSize = UDim2.new(0, 320, 0.65, 0)
+		TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = targetSize
+		}):Play()
+	else
+		local tween = TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, 320, 0, 0)
+		})
+		tween:Play()
+		tween.Completed:Connect(function()
+			if not isOpen then
+				mainFrame.Visible = false
+			end
+		end)
+	end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+	setMenuOpen(not isOpen)
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+	setMenuOpen(false)
+end)
+
+----------------------------------------------------------------
+-- PROFİL AÇMA FONKSİYONU
+----------------------------------------------------------------
+local function openPlayerProfile(userId)
+	local url = "https://www.roblox.com/users/" .. tostring(userId) .. "/profile"
+	local ok, err = pcall(function()
+		GuiService:OpenBrowserWindow(url)
+	end)
+	if not ok then
+		warn("Profil sayfası açılamadı: " .. tostring(err))
+	end
+end
+
+----------------------------------------------------------------
+-- OYUNCU KARTI OLUŞTURMA
+----------------------------------------------------------------
+local playerCards = {} -- [Player] = Frame
+
+local function createPlayerCard(player)
+	local card = Instance.new("TextButton")
+	card.Name = "Card_" .. player.Name
+	card.Size = UDim2.new(1, 0, 0, 64)
+	card.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+	card.AutoButtonColor = false
+	card.Text = ""
+	card.LayoutOrder = player.UserId
+	card.Parent = scrollFrame
+
+	local cardCorner = Instance.new("UICorner")
+	cardCorner.CornerRadius = UDim.new(0, 10)
+	cardCorner.Parent = card
+
+	-- Hover efekti
+	card.MouseEnter:Connect(function()
+		TweenService:Create(card, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(50, 50, 64)
+		}):Play()
+	end)
+	card.MouseLeave:Connect(function()
+		TweenService:Create(card, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+		}):Play()
+	end)
+
+	-- Avatar thumbnail
+	local avatar = Instance.new("ImageLabel")
+	avatar.Name = "Avatar"
+	avatar.AnchorPoint = Vector2.new(0, 0.5)
+	avatar.Position = UDim2.new(0, 8, 0.5, 0)
+	avatar.Size = UDim2.new(0, 48, 0, 48)
+	avatar.BackgroundColor3 = Color3.fromRGB(60, 60, 74)
+	avatar.Image = ""
+	avatar.Parent = card
+
+	local avatarCorner = Instance.new("UICorner")
+	avatarCorner.CornerRadius = UDim.new(1, 0)
+	avatarCorner.Parent = avatar
+
+	-- Thumbnail'i asenkron yükle (UI'yı bloklamamak için)
+	task.spawn(function()
+		local ok, content, isReady = pcall(function()
+			return Players:GetUserThumbnailAsync(player.UserId, THUMBNAIL_TYPE, THUMBNAIL_SIZE)
+		end)
+		if ok and content then
+			avatar.Image = content
+		end
+	end)
+
+	-- Metin konteyneri (isimler burada, uzun isimler taşmasın diye ayrı frame)
+	local textHolder = Instance.new("Frame")
+	textHolder.Name = "TextHolder"
+	textHolder.BackgroundTransparency = 1
+	textHolder.AnchorPoint = Vector2.new(0, 0.5)
+	textHolder.Position = UDim2.new(0, 66, 0.5, 0)
+	textHolder.Size = UDim2.new(1, -76, 1, -10)
+	textHolder.Parent = card
+
+	local displayNameLabel = Instance.new("TextLabel")
+	displayNameLabel.Name = "DisplayName"
+	displayNameLabel.BackgroundTransparency = 1
+	displayNameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	displayNameLabel.Font = Enum.Font.GothamBold
+	displayNameLabel.Text = player.DisplayName
+	displayNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	displayNameLabel.TextSize = 15
+	displayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	displayNameLabel.TextYAlignment = Enum.TextYAlignment.Bottom
+	displayNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	displayNameLabel.Parent = textHolder
+
+	local usernameLabel = Instance.new("TextLabel")
+	usernameLabel.Name = "Username"
+	usernameLabel.BackgroundTransparency = 1
+	usernameLabel.Position = UDim2.new(0, 0, 0.5, 0)
+	usernameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	usernameLabel.Font = Enum.Font.Gotham
+	usernameLabel.Text = "@" .. player.Name
+	usernameLabel.TextColor3 = Color3.fromRGB(170, 170, 185)
+	usernameLabel.TextSize = 13
+	usernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	usernameLabel.TextYAlignment = Enum.TextYAlignment.Top
+	usernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	usernameLabel.Parent = textHolder
+
+	-- Tıklama -> profil aç (kendi ismine tıklamak da dahil)
+	card.MouseButton1Click:Connect(function()
+		openPlayerProfile(player.UserId)
+	end)
+
+	return card
+end
+
+----------------------------------------------------------------
+-- LİSTE YÖNETİMİ
+----------------------------------------------------------------
+local function addPlayer(player)
+	if playerCards[player] then return end
+	local card = createPlayerCard(player)
+	playerCards[player] = card
+end
+
+local function removePlayer(player)
+	local card = playerCards[player]
+	if card then
+		card:Destroy()
+		playerCards[player] = nil
+	end
+end
+
+-- Menü açıldığı anda mevcut TÜM oyuncuları listele
+for _, player in ipairs(Players:GetPlayers()) do
+	addPlayer(player)
+end
+
+-- Yeni oyuncu girince otomatik ekle
+Players.PlayerAdded:Connect(addPlayer)
+
+-- Oyuncu çıkınca otomatik sil
+Players.PlayerRemoving:Connect(removePlayer)
+
+-- DisplayName değişirse (nadir de olsa) etiketi güncelle
+Players.PlayerAdded:Connect(function(player)
+	player:GetPropertyChangedSignal("DisplayName"):Connect(function()
+		local card = playerCards[player]
+		if card then
+			local textHolder = card:FindFirstChild("TextHolder")
+			if textHolder then
+				local label = textHolder:FindFirstChild("DisplayName")
+				if label then
+					label.Text = player.DisplayName
+				end
+			end
+		end
+	end)
+end)
